@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+	
+	<!--extend one editor-->
+   <extension
+         point="org.eclipse.ui.editors">
+      <editor
+            name="ShadowEdit XML Editor"
+            extensions="sdexml"
+            icon="icons/xml.png"
+            contributorClass="org.eclipse.ui.texteditor.BasicTextEditorActionContributor"
+            class="shadowedit.editors.ShadowEditXMLEditor"
+            id="shadowedit.editors.ShadowEditXMLEditor">
+      </editor>
+   </extension>
+   
+   <extension
+         point="org.eclipse.ui.commands">
+      <category
+            id="ShadowEdit.commands.category"
+            name="Shadow Edit">
+      </category>
+      <command
+            categoryId="ShadowEdit.commands.category"
+            id="ShadowEdit.commands.ablilityCommand"
+            name="Enable/Disable Shadow">
+      </command>
+   </extension>
+   
+   <extension
+         point="org.eclipse.ui.handlers">
+      <handler
+            class="shadowedit.handlers.ShadowEditHandler"
+            commandId="ShadowEdit.commands.ablilityCommand">
+      </handler>
+   </extension>
+   <extension
+         point="org.eclipse.ui.bindings">
+      <key
+            commandId="ShadowEdit.commands.ablilityCommand"
+            contextId="org.eclipse.ui.contexts.window"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M1+6">
+      </key>
+   </extension>
+   
+   <extension
+         point="org.eclipse.ui.menus">
+         <!--put in file/ -->
+      <menuContribution
+            locationURI="menu:file?after=export">
+         <menu
+               id="ShadowEdit.menus.rootMenu"
+               label="Shadow Edit"
+               mnemonic="M">
+            <command
+                  commandId="ShadowEdit.commands.ablilityCommand"
+                  id="ShadowEdit.menus.ablilityCommand"
+                  mnemonic="S">
+            </command>
+         </menu>
+      </menuContribution>
+      
+      <menuContribution
+            locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
+         <toolbar id="ShadowEdit.toolbars.ablilityToolbar">
+            <command
+                  commandId="ShadowEdit.commands.ablilityCommand"
+                  icon="icons/sync.png"
+                  id="ShadowEdit.toolbars.ablilityCommand"
+                  tooltip="enable disable shadow edit">
+            </command>
+         </toolbar>
+      </menuContribution>
+   </extension>
+
+</plugin>

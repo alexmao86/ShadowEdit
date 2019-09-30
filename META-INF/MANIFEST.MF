@@ -1,0 +1,15 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: ShadowEdit
+Bundle-SymbolicName: ShadowEdit;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: shadowedit.Activator
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.jface.text,
+ org.eclipse.ui.editors,
+ org.eclipse.core.resources;bundle-version="3.12.0",
+ org.slf4j.api;bundle-version="1.7.10"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Automatic-Module-Name: ShadowEdit
+Bundle-ActivationPolicy: lazy
