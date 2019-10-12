@@ -1,5 +1,9 @@
 package shadowedit.monitor;
 
+import java.text.MessageFormat;
+
+import shadowedit.model.ShadowEdit;
+
 public class FileAction {
 	public static final int NEW=0;
 	public static final int MODIFY=1;
@@ -9,12 +13,20 @@ public class FileAction {
 	private int eclipseKind;
 	private String projectPath;
 	private String resourcePath;
+	private String relativePath;
+	private final ShadowEdit shadowEdit;
 	
-	public FileAction(int eclipseKind, String projectPath, String resourcePath) {
+	public FileAction(int eclipseKind, String projectPath, String resourcePath, ShadowEdit edit) {
 		super();
+		
 		this.eclipseKind = eclipseKind;
 		this.projectPath = projectPath;
 		this.resourcePath = resourcePath;
+		this.shadowEdit=edit;
+		
+		this.projectPath=this.projectPath.replaceAll("\\\\", "/");
+		this.resourcePath=this.resourcePath.replaceAll("\\\\", "/");
+		this.relativePath=this.resourcePath.replaceAll(this.projectPath, "");
 	}
 	
 	public int getEclipseKind() {
@@ -39,9 +51,21 @@ public class FileAction {
 		return millseconds;
 	}
 
+	public String getRelativePath() {
+		return relativePath;
+	}
+
+	public void setRelativePath(String relativePath) {
+		this.relativePath = relativePath;
+	}
+
+	public ShadowEdit getShadowEdit() {
+		return shadowEdit;
+	}
+
 	@Override
 	public String toString() {
-		return "FileAction [millseconds=" + millseconds + ", eclipseKind=" + eclipseKind + ", projectPath="
-				+ projectPath + ", resourcePath=" + resourcePath + "]";
+		return MessageFormat.format("[{0}:{1} {2} {3} {4}]", millseconds, eclipseKind, projectPath, resourcePath, relativePath);
 	}
+	
 }

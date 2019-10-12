@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ShadowEdit enabled="false">
+	<description>
+	This file is created by Shadow Edit plugin.Author: Mao Anping
+	</description>
+	<!-- 
+	file filter:
+	see https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/util/AntPathMatcher.html for pattern
+	 -->
+	<fileset>
+		<include>**/*</include>
+		<exclude>*.java</exclude>
+	</fileset>
+	
+	<!-- you can use {0}, {1}, ... in all command templates, for example, mv {0} {1} -->
+	<!-- 
+	command when file is moved to other place,arguments:
+	{0}: timestampe in long integer format
+	{1}: old file project path
+	{2}: old file absolute path
+	{3}: old file relative path, related to project root
+	{4}: new file project path
+	{5}: new file absolute path
+	{6}: new file relative path, related to project root
+	-->
+	<onmoveto>echo &quot;{0} {1} {2} {3} {4} {5} {6}&quot;</onmoveto>
+	
+	<!-- 
+	command when file( not folder only for file) content is changed,arguments:
+	{0}: timestampe in long integer format
+	{1}: file project path
+	{2}: file absolute path
+	{3}: file relative path, related to project root
+	-->
+	<onmodify>echo &quot;{0} {1} {2} {3}&quot;</onmodify>
+	
+	<!-- 
+	command when file( also folder) is removed,arguments:
+	{0}: timestampe in long integer format
+	{1}: file project path
+	{2}: file absolute path
+	{3}: file relative path, related to project root
+	-->
+	<onremove>echo &quot;{0} {1} {2} {3}&quot;</onremove>
+	
+	<!-- 
+	command when file( not folder) is created,arguments:
+	{0}: timestampe in long integer format
+	{1}: file project path
+	{2}: file absolute path
+	{3}: file relative path, related to project root
+	-->
+	<oncreate>echo &quot;{0} {1} {2} {3}&quot;</oncreate>
+	
+	<!-- 
+	command when folder( not file) is created, arguments:
+	{0}: timestampe in long integer format
+	{1}: file project path
+	{2}: file absolute path
+	{3}: file relative path, related to project root
+	-->
+	<mkdir>echo &quot;{0} {1} {2} {3}&quot;</mkdir>
+</ShadowEdit>

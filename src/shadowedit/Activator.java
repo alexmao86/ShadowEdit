@@ -1,12 +1,13 @@
 package shadowedit;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.io.PrintStream;
 
 import org.eclipse.core.resources.IResourceChangeEvent;
-import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.ui.console.ConsolePlugin;
+import org.eclipse.ui.console.IConsole;
+import org.eclipse.ui.console.MessageConsole;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
@@ -19,14 +20,18 @@ import shadowedit.monitor.ScriptExecutionChangeListener;
  */
 public class Activator extends AbstractUIPlugin {
 	private final static Logger LOGGER=LoggerFactory.getLogger(Activator.class); 
+
+	public static final String METAFILE = "shadowedit.sdexml";
 	// The plug-in ID
 	public static final String PLUGIN_ID = "ShadowEdit"; //$NON-NLS-1$
 
 	// The shared instance
 	private static Activator plugin;
+	private MessageConsole console;
+	private PrintStream out;
+	private PrintStream err;
 	
-	private IResourceChangeListener resourceChangeListener;
-	private ScheduledExecutorService executor;
+	private ScriptExecutionChangeListener resourceChangeListener;
 	/**
 	 * The constructor
 	 */
@@ -40,10 +45,21 @@ public class Activator extends AbstractUIPlugin {
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
-		executor=Executors.newSingleThreadScheduledExecutor();
-		resourceChangeListener=new ScriptExecutionChangeListener(executor);
+		resourceChangeListener=new ScriptExecutionChangeListener();
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(resourceChangeListener, IResourceChangeEvent.PRE_DELETE|IResourceChangeEvent.POST_CHANGE);
-		LOGGER.debug("workspace watched");
+		
+		console = new MessageConsole("ShadowEdit", null);
+		// Add it to console manager
+        ConsolePlugin.getDefault().getConsoleManager().addConsoles(new IConsole[] {console});
+        
+        PrintStream printStream = new PrintStream(console.newMessageStream());
+        
+    	out=System.out;
+    	err=System.err;
+    	
+        System.setOut(printStream);
+        System.setErr(printStream);
+        LOGGER.debug("workspace watched, plugin started");
 	}
 
 	/*
@@ -54,8 +70,10 @@ public class Activator extends AbstractUIPlugin {
 		plugin = null;
 		super.stop(context);
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(resourceChangeListener);
-		executor.shutdown();
+		resourceChangeListener.dispose();
 		LOGGER.debug("workspace disposed");
+		System.setOut(out);
+        System.setErr(err);
 	}
 
 	/**
