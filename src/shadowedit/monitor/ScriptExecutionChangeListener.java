@@ -93,7 +93,7 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 						}
 					}
 
-					ShadowEdit config = controls.get(projectPath);
+					ShadowEdit config = controls.get(resource.getProject().getName());
 					if (config == null) {
 						LOGGER.warn("no metafile for {}", projectPath);
 						return true;
