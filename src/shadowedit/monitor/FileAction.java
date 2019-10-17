@@ -27,6 +27,14 @@ public class FileAction {
 		this.projectPath=this.projectPath.replaceAll("\\\\", "/");
 		this.resourcePath=this.resourcePath.replaceAll("\\\\", "/");
 		this.relativePath=this.resourcePath.replaceAll(this.projectPath, "");
+		
+		if(projectPath.endsWith("/")){
+			projectPath=projectPath.substring(0, projectPath.length()-1);
+		}
+		
+		if(relativePath.startsWith("/")){
+			relativePath=relativePath.substring(1);
+		}
 	}
 	
 	public int getEclipseKind() {
