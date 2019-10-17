@@ -1,11 +1,13 @@
 package shadowedit.monitor;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
+import java.text.DateFormat;
 import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -23,15 +25,16 @@ import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.runtime.CoreException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import shadowedit.Activator;
 import shadowedit.model.ShadowEdit;
+import shadowedit.util.AntPathMatcher;
 import shadowedit.util.CommanderUtil;
+import shadowedit.util.PathMatcher;
+import shadowedit.util.PluginUtil;
 import shadowedit.util.XMLUtil;
 
 /**
@@ -50,12 +53,13 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 	// 命令的时间戳间隔在50毫秒内，则视为一个命令
 	private final int DELTA = 50;
 
-	private final static Logger LOGGER = LoggerFactory.getLogger(ScriptExecutionChangeListener.class);
 	private Queue<FileAction> commandQueue = new LinkedList<>();
 	private final ScheduledExecutorService shadowEditBackgroundExecutor;
 	private final ScheduledExecutorService otherTaskExecutor;
 	private Map<String, ShadowEdit> controls = new HashMap<>();
-
+	private PathMatcher pathMatcher=new AntPathMatcher();
+	private final static DateFormat FORMAT=new SimpleDateFormat("mm:ss SSS");
+	
 	public ScriptExecutionChangeListener() {
 		super();
 		this.shadowEditBackgroundExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -69,7 +73,7 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 			event.getDelta().accept(new IResourceDeltaVisitor() {
 				@Override
 				public boolean visit(final IResourceDelta delta) throws CoreException {
-					System.out.println("visiting changes "+delta);
+					//Activator.out.println("visiting changes "+delta);
 					final IResource resource = delta.getResource();
 					if (resource.getType() == IResource.PROJECT) {
 						IProject projectRoot = resource.getProject();
@@ -95,36 +99,42 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 
 					ShadowEdit config = controls.get(resource.getProject().getName());
 					if (config == null) {
-						LOGGER.warn("no metafile for {}", projectPath);
+						Activator.out.printf("no metafile for %s\n", projectPath);
 						return true;
 					}
 
 					if (!config.isEnabled()) {
-						LOGGER.warn("{} shadowedit is disabled********", projectPath);
+						Activator.out.printf("project %s shadowedit is disabled\n", projectPath);
 						return true;
 					}
 					
-					LOGGER.warn("{} shadowedit is enabled", projectPath);
+					//Activator.out.printf("%s shadowedit is enabled", projectPath);
+					String relativePath=resourcePath.substring(projectPath.length()+1).replaceAll("\\\\", "/");
+					boolean accept=doFilter(relativePath, config);
+					if(!accept){
+						Activator.out.printf("%s is excluded\n", relativePath);
+						return true;
+					}
 					//把多个命令放入队列进行分析
 					if (delta.getKind() == IResourceDelta.ADDED) {
-						LOGGER.debug("{} projectPath: {}, resource {} added", System.currentTimeMillis(), projectPath, resourcePath);
-						commandQueue.offer(new FileAction(IResourceDelta.ADDED, projectPath, resourcePath, controls.get(projectPath)));
+						Activator.out.printf("%s：  %s added\n", formatedTime(), resourcePath);
+						commandQueue.offer(new FileAction(IResourceDelta.ADDED, projectPath, resourcePath, config));
 					}
 					if (delta.getKind() == IResourceDelta.CHANGED) {
-						LOGGER.debug("{} projectPath: {}, resource {} changed", System.currentTimeMillis(), projectPath, resourcePath);
-						commandQueue.offer(new FileAction(IResourceDelta.CHANGED, projectPath, resourcePath, controls.get(projectPath)));
+						Activator.out.printf("%s: %s changed\n", formatedTime(), resourcePath);
+						commandQueue.offer(new FileAction(IResourceDelta.CHANGED, projectPath, resourcePath, config));
 					}
 					if (delta.getKind() == IResourceDelta.REMOVED) {
-						LOGGER.debug("{} projectPath: {}, resource {} removed", System.currentTimeMillis(), projectPath, resourcePath);
-						commandQueue.offer(new FileAction(IResourceDelta.REMOVED, projectPath, resourcePath, controls.get(projectPath)));
+						Activator.out.printf("%s：  %s removed\n", formatedTime(), resourcePath);
+						commandQueue.offer(new FileAction(IResourceDelta.REMOVED, projectPath, resourcePath, config));
 					}
 					if ((delta.getFlags() & IResourceDelta.MOVED_FROM) != 0) {
-						LOGGER.debug("{} projectPath: {}, resource {} move from", System.currentTimeMillis(), projectPath, resourcePath);
-						commandQueue.offer(new FileAction(IResourceDelta.MOVED_FROM, projectPath, resourcePath, controls.get(projectPath)));
+						Activator.out.printf("%s：  %s move from\n", formatedTime(), resourcePath);
+						commandQueue.offer(new FileAction(IResourceDelta.MOVED_FROM, projectPath, resourcePath, config));
 					}
 					if ((delta.getFlags() & IResourceDelta.MOVED_TO) != 0) {
-						LOGGER.debug("{} projectPath: {}, resource {} move to", System.currentTimeMillis(), projectPath, resourcePath);
-						commandQueue.offer(new FileAction(IResourceDelta.MOVED_TO, projectPath, resourcePath, controls.get(projectPath)));
+						Activator.out.printf("%s：  %s movedto\n", formatedTime(), resourcePath);
+						commandQueue.offer(new FileAction(IResourceDelta.MOVED_TO, projectPath, resourcePath, config));
 					}
 					return true;
 				}
@@ -134,24 +144,46 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 		}
 	}
 
+
+	private Object formatedTime() {
+		return FORMAT.format(new Date());
+	}
+	private boolean doFilter(String path, ShadowEdit config) {
+		boolean include=false;
+		if(config.getIncludes().isEmpty()){
+			include=true;
+		}
+		else {
+			for(String pattern:config.getIncludes()){
+				if(this.pathMatcher.match(pattern, path)){
+					include=true;
+					break;
+				}
+			}
+		}
+		
+		boolean exclude=false;
+		if(config.getIncludes().isEmpty()){
+			exclude=false;
+		}
+		else {
+			for(String pattern:config.getExcludes()){
+				if(this.pathMatcher.match(pattern, path)){
+					exclude=true;
+					break;
+				}
+			}
+		}
+		
+		return include&&(!exclude);
+	}
+
 	/**
 	 * 
 	 * @param projectRoot
 	 */
 	private void generateOptionallyAndWatchMetafile(final IProject project) {
-		LOGGER.debug("generating shadow edit metafile");
-		IFile file = project.getFile(Activator.METAFILE);
-		
-		if (!file.exists()) {
-			LOGGER.debug("not exists, auto generate metafile");
-			try {
-				InputStream in = ScriptExecutionChangeListener.class.getResourceAsStream("ShadowEdit.xml");
-				file.create(in, true, null);
-				in.close();
-			} catch (IOException | CoreException e) {
-				e.printStackTrace();
-			}
-		}
+		PluginUtil.createMetafileOptionally(project);
 
 		try {
 			parseMetafile(project);
@@ -203,11 +235,10 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 
 	@Override
 	public void run() {
-		LOGGER.debug("background watching");
-		//System.out.println("watching ...");
 		if (commandQueue.isEmpty()) {
 			return;
 		}
+		
 		List<FileAction> sub = new ArrayList<>();
 		FileAction temp = commandQueue.poll();
 		sub.add(temp);
@@ -246,18 +277,18 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 
 		// add files
 		if (changes >= 0 && adds > 0 && removes == 0 && movetos == 0 && movefroms == 0) {
-			doCreate(sub);
-		} else if (changes >= 0 && adds == 0 && removes > 0 && movetos == 0 && movefroms == 0) {// remove 文件或文件夹
-			doRemoval(sub);
-		} else if (changes == 1 && adds == 0 && removes == 0 && movetos == 0 && movefroms == 0) {// 在改文件
-			doContentChange(sub.get(0));
+			doCreates(sub);
+		} else if (changes >= 1 && adds == 0 && removes > 0 && movetos == 0 && movefroms == 0) {// remove 文件或文件夹
+			doRemoves(sub);
+		} else if (changes >= 1 && adds == 0 && removes == 0 && movetos == 0 && movefroms == 0) {// 在改文件
+			doContentChanges(sub.get(0));
 		} else if (movetos > 0 && movefroms > 0) {
-			doMoveTo(sub);
+			doMoves(sub);
 		}
 	}
 
 	// 只需在队列里面找到第一条moveto则是rename的newname，第一条move from 是oldname
-	private void doMoveTo(List<FileAction> sub) {
+	private void doMoves(List<FileAction> sub) {
 		this.shadowEditBackgroundExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
@@ -278,7 +309,7 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 					ShadowEdit edit = oldFile.getShadowEdit();
 					List<String> result = CommanderUtil.execute(MessageFormat.format(edit.getOnmoveto(), oldFile.getMillseconds() + "", oldFile.getProjectPath(), oldFile.getResourcePath(), oldFile.getRelativePath(), newFile.getProjectPath(), newFile.getResourcePath(), newFile.getRelativePath()));
 					for (String l : result) {
-						System.out.println(l);
+						Activator.out.println(l);
 					}
 				}
 			}
@@ -286,7 +317,7 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 
 	}
 
-	private void doCreate(List<FileAction> sub) {
+	private void doCreates(List<FileAction> sub) {
 		Collections.sort(sub, new java.util.Comparator<FileAction>() {
 			@Override
 			public int compare(FileAction o1, FileAction o2) {
@@ -307,7 +338,7 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 						}
 						List<String> result = CommanderUtil.execute(MessageFormat.format(commandMessage, fa.getMillseconds() + "", fa.getProjectPath(), fa.getResourcePath(), fa.getRelativePath()));
 						for (String l : result) {
-							System.out.println(l);
+							Activator.out.println(l);
 						}
 					}
 				});
@@ -315,7 +346,7 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 		}
 	}
 
-	private void doRemoval(List<FileAction> sub) {
+	private void doRemoves(List<FileAction> sub) {
 		Collections.sort(sub, new java.util.Comparator<FileAction>() {
 			@Override
 			public int compare(FileAction o1, FileAction o2) {
@@ -330,7 +361,7 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 						ShadowEdit edit = fa.getShadowEdit();
 						List<String> result = CommanderUtil.execute(MessageFormat.format(edit.getOnremove(), fa.getMillseconds() + "", fa.getProjectPath(), fa.getResourcePath(), fa.getRelativePath()));
 						for (String l : result) {
-							System.out.println(l);
+							Activator.out.println(l);
 						}
 					}
 				});
@@ -338,14 +369,14 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 		}
 	}
 
-	private void doContentChange(final FileAction fa) {
+	private void doContentChanges(final FileAction fa) {
 		this.shadowEditBackgroundExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
 				ShadowEdit edit = fa.getShadowEdit();
 				List<String> result = CommanderUtil.execute(MessageFormat.format(edit.getOnmodify(), fa.getMillseconds() + "", fa.getProjectPath(), fa.getResourcePath(), fa.getRelativePath()));
 				for (String l : result) {
-					System.out.println(l);
+					Activator.out.println(l);
 				}
 			}
 		});

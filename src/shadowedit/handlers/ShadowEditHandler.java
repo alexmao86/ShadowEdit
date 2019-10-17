@@ -19,6 +19,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.w3c.dom.Document;
 
 import shadowedit.Activator;
+import shadowedit.util.PluginUtil;
 import shadowedit.util.XMLUtil;
 
 /**
@@ -50,11 +51,12 @@ public class ShadowEditHandler extends AbstractHandler {
 						return null;
 					} else {
 						try {
+							PluginUtil.createMetafileOptionally(project);
 							IFile file = project.getFile(Activator.METAFILE);
 							InputStream xmlin = file.getContents();
 							Document doc = XMLUtil.createDocument(xmlin);
 							xmlin.close();
-
+							doc.getDocumentElement().setAttribute(" timestamp=", System.currentTimeMillis()+"");
 							boolean enabled = true;
 							String attr = doc.getDocumentElement().getAttribute("enabled");
 

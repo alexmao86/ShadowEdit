@@ -8,8 +8,12 @@
 	see https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/util/AntPathMatcher.html for pattern
 	 -->
 	<fileset>
-		<include>**/*</include>
-		<exclude>*.java</exclude>
+		<exclude>**/*.class*</exclude>
+		<exclude>target/**/*</exclude>
+		<exclude>build/**/*</exclude>
+		<exclude>devel/**/*</exclude>
+		<exclude>bin/**/*</exclude>
+		<exclude>logs/**/*</exclude>
 	</fileset>
 	
 	<!-- you can use {0}, {1}, ... in all command templates, for example, mv {0} {1} -->
