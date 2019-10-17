@@ -16,7 +16,7 @@ command to your native command, such .bat or python script.
 there are detailed coments in .sdexml template. Please just follow doc to refer arguments
 
 ## How to install ShadowEdit?
-Just copy "plugin/ShadowEdit_version_timestamp.jar" to your eclipse/plugins, then restart your eclipse
+Just copy "[plugin/ShadowEdit_version_timestamp.jar](https://github.com/alexmao86/ShadowEdit/blob/master/release-20191017.zip)" to your eclipse/plugins, then restart your eclipse
 
 ## ShadowEdit的创作背景
 我工作在一个远程Ubunt14上，这个服务器只能通过SSH远程连接， 由于工具链和开发环境不能在windows上设置起来，同时，我不习惯用VIM等基于命令行的集成开发环境。开始，用想了个办法，用WinSCP的同步工具做，步骤如下，先在windows的eclipse里面编辑我的文件，然后不定期的去WinSCP点击同步按钮把文件同步到服务器，然后去我的SSH里面敲CMake等命令。这个方法不顺手但是解决了我的问题。所以，我想开发一个插件来解决这些点击动作，让工作自动化起来。
@@ -33,6 +33,6 @@ ShadowEdit扩展了三个插件，在工程的根目录增加了一个元文件"
 命令行字符串可以使用{0}这样的变量替换，在生成的.sdexml模板里面有详细的参数描述，请参考编写你的参数。
 
 ## 如何安装ShadowEdit？
-只需把"plugin/ShadowEdit_version_timestamp.jar"复制到你的eclipse/plugin下面，重启eclipse即可
+只需把"[plugin/ShadowEdit_version_timestamp.jar](https://github.com/alexmao86/ShadowEdit/blob/master/release-20191017.zip)"复制到你的eclipse/plugin下面，重启eclipse即可
 
 ![ShadowEdit](https://raw.githubusercontent.com/alexmao86/ShadowEdit/master/snapshot.jpg "ShadowEdit")
