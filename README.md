@@ -32,7 +32,7 @@ ShadowEdit扩展了三个插件，在工程的根目录增加了一个元文件"
 
 命令行字符串可以使用{0}这样的变量替换，在生成的.sdexml模板里面有详细的参数描述，请参考编写你的参数。
 
-##如何安装ShadowEdit？
+## 如何安装ShadowEdit？
 只需把"ShadowEdit_version_timestamp.jar"复制到你的eclipse/plugin下面，重启eclipse即可
 
-![ShadowEdit](https://raw.github.com/sarxos/webcam-capture/master/webcam-capture/src/etc/resources/sarxos.png "ShadowEdit")
+![ShadowEdit](https://raw.githubusercontent.com/alexmao86/ShadowEdit/master/snapshot.jpg "ShadowEdit")
