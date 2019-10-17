@@ -76,7 +76,7 @@ public class ShadowEditHandler extends AbstractHandler {
 							in.close();
 							out.close();
 							
-							MessageDialog.openInformation(window.getShell(), "Info", "shadow edit was "+(enabled?"enabled":"disabled"));
+							MessageDialog.openInformation(window.getShell(), "Info", project.getName()+" shadow edit was "+(enabled?"enabled":"disabled"));
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
