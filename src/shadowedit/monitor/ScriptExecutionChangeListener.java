@@ -117,23 +117,23 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 					}
 					//把多个命令放入队列进行分析
 					if (delta.getKind() == IResourceDelta.ADDED) {
-						Activator.out.printf("%s：  %s added\n", formatedTime(), resourcePath);
+						Activator.out.printf("[%s]:  %s added\n", formatedTime(), resourcePath);
 						commandQueue.offer(new FileAction(IResourceDelta.ADDED, projectPath, resourcePath, config));
 					}
 					if (delta.getKind() == IResourceDelta.CHANGED) {
-						Activator.out.printf("%s: %s changed\n", formatedTime(), resourcePath);
+						Activator.out.printf("[%s]: %s changed\n", formatedTime(), resourcePath);
 						commandQueue.offer(new FileAction(IResourceDelta.CHANGED, projectPath, resourcePath, config));
 					}
 					if (delta.getKind() == IResourceDelta.REMOVED) {
-						Activator.out.printf("%s：  %s removed\n", formatedTime(), resourcePath);
+						Activator.out.printf("[%s]:  %s removed\n", formatedTime(), resourcePath);
 						commandQueue.offer(new FileAction(IResourceDelta.REMOVED, projectPath, resourcePath, config));
 					}
 					if ((delta.getFlags() & IResourceDelta.MOVED_FROM) != 0) {
-						Activator.out.printf("%s：  %s move from\n", formatedTime(), resourcePath);
+						Activator.out.printf("[%s]:  %s move from\n", formatedTime(), resourcePath);
 						commandQueue.offer(new FileAction(IResourceDelta.MOVED_FROM, projectPath, resourcePath, config));
 					}
 					if ((delta.getFlags() & IResourceDelta.MOVED_TO) != 0) {
-						Activator.out.printf("%s：  %s movedto\n", formatedTime(), resourcePath);
+						Activator.out.printf("[%s]:  %s movedto\n", formatedTime(), resourcePath);
 						commandQueue.offer(new FileAction(IResourceDelta.MOVED_TO, projectPath, resourcePath, config));
 					}
 					return true;
@@ -278,10 +278,10 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 		// add files
 		if (changes >= 0 && adds > 0 && removes == 0 && movetos == 0 && movefroms == 0) {
 			doCreates(sub);
-		} else if (changes >= 1 && adds == 0 && removes > 0 && movetos == 0 && movefroms == 0) {// remove 文件或文件夹
+		} else if (changes >= 0/*需要使用>=对应很多自动编译的IDE短时间内很多文件可能修改，如果文件夹里面没有文件，只发生remove*/ && adds == 0 && removes > 0 && movetos == 0 && movefroms == 0) {// remove 文件或文件夹,
 			doRemoves(sub);
 		} else if (changes >= 1 && adds == 0 && removes == 0 && movetos == 0 && movefroms == 0) {// 在改文件
-			doContentChanges(sub.get(0));
+			doContentChanges(sub);
 		} else if (movetos > 0 && movefroms > 0) {
 			doMoves(sub);
 		}
@@ -318,6 +318,7 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 	}
 
 	private void doCreates(List<FileAction> sub) {
+		//长文件名在后
 		Collections.sort(sub, new java.util.Comparator<FileAction>() {
 			@Override
 			public int compare(FileAction o1, FileAction o2) {
@@ -369,17 +370,30 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 		}
 	}
 
-	private void doContentChanges(final FileAction fa) {
-		this.shadowEditBackgroundExecutor.execute(new Runnable() {
+	private void doContentChanges(final List<FileAction> list) {
+		//长文件名在前
+		Collections.sort(list, new java.util.Comparator<FileAction>() {
 			@Override
-			public void run() {
-				ShadowEdit edit = fa.getShadowEdit();
-				List<String> result = CommanderUtil.execute(MessageFormat.format(edit.getOnmodify(), fa.getMillseconds() + "", fa.getProjectPath(), fa.getResourcePath(), fa.getRelativePath()));
-				for (String l : result) {
-					Activator.out.println(l);
-				}
+			public int compare(FileAction o1, FileAction o2) {
+				return o2.getResourcePath().length() - o1.getResourcePath().length();
 			}
 		});
+		for (final FileAction fa : list) {
+			if(new File(fa.getResourcePath()).isDirectory()){
+				//当改变子目录的文件时，其父目录都会发生change事件，这些不需要
+				continue;
+			}
+			this.shadowEditBackgroundExecutor.execute(new Runnable() {
+				@Override
+				public void run() {
+					ShadowEdit edit = fa.getShadowEdit();
+					List<String> result = CommanderUtil.execute(MessageFormat.format(edit.getOnmodify(), fa.getMillseconds() + "", fa.getProjectPath(), fa.getResourcePath(), fa.getRelativePath()));
+					for (String l : result) {
+						Activator.out.println(l);
+					}
+				}
+			});
+		}
 	}
 
 	public void dispose() {
