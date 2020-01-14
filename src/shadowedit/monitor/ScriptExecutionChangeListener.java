@@ -104,7 +104,7 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 					}
 
 					if (!config.isEnabled()) {
-						Activator.out.printf("project %s shadowedit is disabled\n", projectPath);
+						//Activator.out.printf("project %s shadowedit is disabled\n", projectPath);
 						return true;
 					}
 					
@@ -117,23 +117,23 @@ public class ScriptExecutionChangeListener implements IResourceChangeListener, R
 					}
 					//把多个命令放入队列进行分析
 					if (delta.getKind() == IResourceDelta.ADDED) {
-						Activator.out.printf("[%s]:  %s added\n", formatedTime(), resourcePath);
+						//Activator.out.printf("[%s]:  %s added\n", formatedTime(), resourcePath);
 						commandQueue.offer(new FileAction(IResourceDelta.ADDED, projectPath, resourcePath, config));
 					}
 					if (delta.getKind() == IResourceDelta.CHANGED) {
-						Activator.out.printf("[%s]: %s changed\n", formatedTime(), resourcePath);
+						//Activator.out.printf("[%s]: %s changed\n", formatedTime(), resourcePath);
 						commandQueue.offer(new FileAction(IResourceDelta.CHANGED, projectPath, resourcePath, config));
 					}
 					if (delta.getKind() == IResourceDelta.REMOVED) {
-						Activator.out.printf("[%s]:  %s removed\n", formatedTime(), resourcePath);
+						//Activator.out.printf("[%s]:  %s removed\n", formatedTime(), resourcePath);
 						commandQueue.offer(new FileAction(IResourceDelta.REMOVED, projectPath, resourcePath, config));
 					}
 					if ((delta.getFlags() & IResourceDelta.MOVED_FROM) != 0) {
-						Activator.out.printf("[%s]:  %s move from\n", formatedTime(), resourcePath);
+						//Activator.out.printf("[%s]:  %s move from\n", formatedTime(), resourcePath);
 						commandQueue.offer(new FileAction(IResourceDelta.MOVED_FROM, projectPath, resourcePath, config));
 					}
 					if ((delta.getFlags() & IResourceDelta.MOVED_TO) != 0) {
-						Activator.out.printf("[%s]:  %s movedto\n", formatedTime(), resourcePath);
+						//Activator.out.printf("[%s]:  %s movedto\n", formatedTime(), resourcePath);
 						commandQueue.offer(new FileAction(IResourceDelta.MOVED_TO, projectPath, resourcePath, config));
 					}
 					return true;
